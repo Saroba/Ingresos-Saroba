@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Financiero</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',sans-serif;
+  background:#0f172a;
+  color:#e2e8f0;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  padding:2rem 1rem;
+}
+.app{max-width:420px;width:100%}
+.card{background:#1e293b;border:0.5px solid #334155;border-radius:16px;padding:1.25rem;margin-bottom:1rem}
+.title{font-size:18px;font-weight:500;color:#e2e8f0;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px}
+.tabs{display:flex;gap:6px;margin-bottom:1.25rem}
+.tab{flex:1;padding:8px;border:0.5px solid #475569;border-radius:8px;background:transparent;color:#94a3b8;font-size:13px;cursor:pointer;transition:all .15s}
+.tab.active{background:#0c2a3e;color:#38bdf8;border-color:transparent;font-weight:500}
+label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;margin-top:12px}
+input[type=number]{width:100%;padding:10px 12px;border:0.5px solid #475569;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:15px;outline:none;-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]:focus{border-color:#38bdf8;box-shadow:0 0 0 2px rgba(56,189,248,.15)}
+.pct-row{display:flex;gap:10px}
+.pct-group{flex:1}
+.pct-suffix{position:relative}
+.pct-suffix input{padding-right:28px}
+.pct-suffix span{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#64748b;pointer-events:none}
+.results{display:flex;flex-direction:column;gap:10px;margin-top:1rem}
+.result-item{padding:1rem 1.25rem;border-radius:8px;border:0.5px solid}
+.result-item.ahorro{background:#052e16;border-color:#166534}
+.result-item.deuda{background:#2d0808;border-color:#991b1b}
+.result-item.vida{background:#2d1a00;border-color:#92400e}
+.result-label{font-size:12px;margin-bottom:2px}
+.ahorro .result-label{color:#4ade80}
+.deuda .result-label{color:#f87171}
+.vida .result-label{color:#fbbf24}
+.result-val{font-size:22px;font-weight:500}
+.ahorro .result-val{color:#22c55e}
+.deuda .result-val{color:#ef4444}
+.vida .result-val{color:#f59e0b}
+.result-pct{font-size:12px;margin-top:2px;opacity:.7}
+.ahorro .result-pct{color:#4ade80}
+.deuda .result-pct{color:#f87171}
+.vida .result-pct{color:#fbbf24}
+.highlight-card{background:#0c2a3e;border:0.5px solid #0369a1;border-radius:8px;padding:1rem 1.25rem;text-align:center;margin-bottom:1rem}
+.highlight-label{font-size:12px;color:#7dd3fc;margin-bottom:4px}
+.highlight-val{font-size:26px;font-weight:500;color:#38bdf8}
+.highlight-sub{font-size:12px;color:#7dd3fc;margin-top:4px}
+.section-note{font-size:12px;color:#64748b;margin-top:8px;line-height:1.5}
+.bar-container{margin-top:12px;border-radius:999px;overflow:hidden;height:8px;display:flex;gap:2px}
+.bar-seg{height:100%;transition:width .3s}
+.bar-ahorro{background:#22c55e}
+.bar-deuda{background:#ef4444}
+.bar-vida{background:#f59e0b}
+.empty{color:#64748b;font-size:13px;text-align:center;padding:1rem 0}
+select{width:100%;padding:10px 12px;border:0.5px solid #475569;border-radius:8px;background:#0f172a;color:#e2e8f0;font-size:14px;outline:none;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+    <div class="title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Control Financiero
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="setMode('normal')">Tengo un ingreso</button>
+      <button class="tab" onclick="setMode('inverso')">¿Cuánto necesito?</button>
+    </div>
+
+    <div id="panel-normal">
+      <label>¿Cuánto te entró? (COP)</label>
+      <input type="number" id="ingreso" placeholder="Ej: 3000000" oninput="calcular()">
+
+      <div style="margin-top:14px;margin-bottom:4px;font-size:12px;color:#94a3b8">Mis porcentajes</div>
+      <div class="pct-row">
+        <div class="pct-group">
+          <label style="color:#22c55e">Ahorro</label>
+          <div class="pct-suffix">
+            <input type="number" id="pAhorro" value="20" min="0" max="100" oninput="calcular()">
+            <span>%</span>
+          </div>
+        </div>
+        <div class="pct-group">
+          <label style="color:#ef4444">Deudas</label>
+          <div class="pct-suffix">
+            <input type="number" id="pDeuda" value="42" min="0" max="100" oninput="calcular()">
+            <span>%</span>
+          </div>
+        </div>
+      </div>
+      <div class="section-note" id="pct-warn"></div>
+    </div>
+
+    <div id="panel-inverso" style="display:none">
+      <label>¿Qué sección quieres fijar?</label>
+      <select id="seccionInv" onchange="calcularInverso()">
+        <option value="ahorro">Ahorro</option>
+        <option value="deuda">Deudas</option>
+        <option value="vida">Vida</option>
+      </select>
+
+      <label>Monto que quieres destinar (COP)</label>
+      <input type="number" id="montoInv" placeholder="Ej: 300000" oninput="calcularInverso()">
+
+      <div style="margin-top:14px;margin-bottom:4px;font-size:12px;color:#94a3b8">Porcentajes actuales</div>
+      <div class="pct-row">
+        <div class="pct-group">
+          <label style="color:#22c55e">Ahorro</label>
+          <div class="pct-suffix">
+            <input type="number" id="pAhorroInv" value="20" min="0" max="100" oninput="calcularInverso()">
+            <span>%</span>
+          </div>
+        </div>
+        <div class="pct-group">
+          <label style="color:#ef4444">Deudas</label>
+          <div class="pct-suffix">
+            <input type="number" id="pDeudaInv" value="42" min="0" max="100" oninput="calcularInverso()">
+            <span>%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<script>
+let modo = 'normal';
+
+function setMode(m) {
+  modo = m;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', (m==='normal'&&i===0)||(m==='inverso'&&i===1)));
+  document.getElementById('panel-normal').style.display = m==='normal'?'':'none';
+  document.getElementById('panel-inverso').style.display = m==='inverso'?'':'none';
+  document.getElementById('output').innerHTML = '';
+  if(m==='inverso') calcularInverso(); else calcular();
+}
+
+function cop(n) {
+  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}).format(Math.round(n));
+}
+
+function calcular() {
+  const ingreso = parseFloat(document.getElementById('ingreso').value) || 0;
+  const pA = parseFloat(document.getElementById('pAhorro').value) || 0;
+  const pD = parseFloat(document.getElementById('pDeuda').value) || 0;
+  const pV = Math.max(0, 100 - pA - pD);
+  const warn = document.getElementById('pct-warn');
+
+  if(pA + pD > 100) {
+    warn.textContent = 'Los porcentajes superan el 100%. Ajústalos.';
+    warn.style.color = '#ef4444';
+  } else {
+    warn.textContent = `Vida: ${pV}% (lo que resta)`;
+    warn.style.color = '#64748b';
+  }
+
+  if(!ingreso) { document.getElementById('output').innerHTML=''; return; }
+
+  const ahorro = ingreso * pA / 100;
+  const deuda = ingreso * pD / 100;
+  const vida = ingreso * pV / 100;
+
+  document.getElementById('output').innerHTML = `
+    <div class="results">
+      <div class="result-item ahorro">
+        <div class="result-label">Ahorro (${pA}%)</div>
+        <div class="result-val">${cop(ahorro)}</div>
+        <div class="result-pct">De ${cop(ingreso)} ingresados</div>
+      </div>
+      <div class="result-item deuda">
+        <div class="result-label">Deudas (${pD}%)</div>
+        <div class="result-val">${cop(deuda)}</div>
+        <div class="result-pct">Para créditos y préstamos</div>
+      </div>
+      <div class="result-item vida">
+        <div class="result-label">Vida (${pV}%)</div>
+        <div class="result-val">${cop(vida)}</div>
+        <div class="result-pct">Gastos diarios y semanales</div>
+      </div>
+    </div>
+    <div class="bar-container" style="margin-top:12px">
+      <div class="bar-seg bar-ahorro" style="width:${pA}%"></div>
+      <div class="bar-seg bar-deuda" style="width:${pD}%"></div>
+      <div class="bar-seg bar-vida" style="width:${pV}%"></div>
+    </div>
+  `;
+}
+
+function calcularInverso() {
+  const monto = parseFloat(document.getElementById('montoInv').value) || 0;
+  const seccion = document.getElementById('seccionInv').value;
+  const pA = parseFloat(document.getElementById('pAhorroInv').value) || 0;
+  const pD = parseFloat(document.getElementById('pDeudaInv').value) || 0;
+  const pV = Math.max(0, 100 - pA - pD);
+
+  if(!monto) { document.getElementById('output').innerHTML=''; return; }
+
+  let pct = seccion==='ahorro'?pA : seccion==='deuda'?pD : pV;
+  if(pct<=0) {
+    document.getElementById('output').innerHTML=`<div class="card"><p class="empty">El porcentaje de esa sección es 0%. Ajústalo primero.</p></div>`;
+    return;
+  }
+
+  const ingreso = monto / (pct/100);
+  const ahorro = ingreso * pA/100;
+  const deuda = ingreso * pD/100;
+  const vida = ingreso * pV/100;
+  const labels = {ahorro:'Ahorro',deuda:'Deudas',vida:'Vida'};
+
+  document.getElementById('output').innerHTML = `
+    <div class="highlight-card">
+      <div class="highlight-label">Ingreso necesario</div>
+      <div class="highlight-val">${cop(ingreso)}</div>
+      <div class="highlight-sub">Para que ${labels[seccion].toLowerCase()} sea ${cop(monto)}</div>
+    </div>
+    <div class="results">
+      <div class="result-item ahorro">
+        <div class="result-label">Ahorro (${pA}%)</div>
+        <div class="result-val">${cop(ahorro)}</div>
+      </div>
+      <div class="result-item deuda">
+        <div class="result-label">Deudas (${pD}%)</div>
+        <div class="result-val">${cop(deuda)}</div>
+      </div>
+      <div class="result-item vida">
+        <div class="result-label">Vida (${pV}%)</div>
+        <div class="result-val">${cop(vida)}</div>
+      </div>
+    </div>
+    <div class="bar-container" style="margin-top:12px">
+      <div class="bar-seg bar-ahorro" style="width:${pA}%"></div>
+      <div class="bar-seg bar-deuda" style="width:${pD}%"></div>
+      <div class="bar-seg bar-vida" style="width:${pV}%"></div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
